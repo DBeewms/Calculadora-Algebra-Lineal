@@ -1,5 +1,3 @@
-# utilidades.py
-
 def mcd(a, b):
     a = a if a >= 0 else -a
     b = b if b >= 0 else -b
@@ -119,6 +117,16 @@ def texto_fraccion(a):
         return str(a[0])
     else:
         return str(a[0]) + "/" + str(a[1])
+
+def texto_decimal(a, decimales=6):
+    """Convierte una fracción a decimal con precisión dada. Se recorta el cero final y el punto si quedan innecesarios."""
+    if a[1] == 0:
+        return "∞"
+    valor = a[0] / a[1]
+    formato = ("{:." + str(decimales) + "f}").format(valor)
+    # quitar ceros a la derecha y posible punto final
+    formato = formato.rstrip('0').rstrip('.') if '.' in formato else formato
+    return formato
 
 def copiar_matriz(M):
     R = []

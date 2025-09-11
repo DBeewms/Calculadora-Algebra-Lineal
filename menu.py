@@ -1,6 +1,3 @@
-
-# menu.py
-
 import operaciones
 import utilidades as u
 
@@ -69,39 +66,52 @@ def imprimir_matriz_aumentada(M):
         print("[ " + izquierda + " | " + pad + txt_b + " ]")
         i = i + 1
 
-# Se eliminó imprimir_vector: mostramos componentes por separado
-
 def mostrar_pasos(pasos):
     if not pasos:
-        print("No se realizaron operaciones (la matriz ya estaba en RREF o vacía).")
+        print("No se realizaron operaciones (la matriz ya estaba en forma escalonada reducida por filas o vacía).")
         return
     i = 0
     while i < len(pasos):
-        print(str(i+1) + ". " + pasos[i])
-        i = i + 1
+        paso = pasos[i]
+        if isinstance(paso, dict):
+            print(f"{i+1:02d}) {paso.get('operacion','')}")
+            imprimir_matriz_aumentada(paso.get("matriz", []))
+            if i < len(pasos) - 1:
+                print("-" * 40)
+        else:
+            print(f"{i+1:02d}) {paso}")
+        i += 1
 
 def mostrar_resultado(R, info):
     solucion = info["solucion"]
+    tipo = info.get("tipo_forma", "ESCALONADA_REDUCIDA")
+    etiqueta = "Matriz en forma escalonada reducida por filas ([A|b]):" if tipo == "ESCALONADA_REDUCIDA" else "Matriz en forma escalonada ([A|b]):"
     if solucion == "INCONSISTENTE":
         print("Solución:", solucion)
-        print("RREF([A|b]):")
+        print(etiqueta)
         imprimir_matriz_aumentada(R)
         return
     if solucion == "UNICA":
         print("Solución:", solucion)
+        valores = info.get("solucion_particular", [])
         i = 0
-        while i < len(info["x_p"]):
-            print("x" + str(i+1) + " = " + u.texto_fraccion(info["x_p"][i]))
+        while i < len(valores):
+            frac = u.texto_fraccion(valores[i])
+            dec = u.texto_decimal(valores[i])
+            print("x" + str(i+1) + " = " + frac + " = " + dec)
             i = i + 1
-        print("RREF([A|b]):")
+        print(etiqueta)
         imprimir_matriz_aumentada(R)
         return
     if solucion == "INFINITAS":
         print("Solución:", solucion)
         print("Solución particular (valores conocidos, 0 para libres):")
+        valores = info.get("solucion_particular", [])
         i = 0
-        while i < len(info["x_p"]):
-            print("x" + str(i+1) + " = " + operaciones.texto_fraccion(info["x_p"][i]))
+        while i < len(valores):
+            frac = u.texto_fraccion(valores[i])
+            dec = u.texto_decimal(valores[i])
+            print("x" + str(i+1) + " = " + frac + " = " + dec)
             i = i + 1
         if "libres" in info and len(info["libres"]) > 0:
             nombres_libres = ""
@@ -113,5 +123,5 @@ def mostrar_resultado(R, info):
                     nombres_libres = nombres_libres + ", "
                 contador_libres = contador_libres + 1
             print("Variables libres:", nombres_libres)
-        print("RREF([A|b]):")
+        print(etiqueta)
         imprimir_matriz_aumentada(R)

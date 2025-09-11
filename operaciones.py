@@ -1,6 +1,3 @@
-
-# operaciones.py
-
 import utilidades as u
 from utilidades import (
     texto_fraccion,
@@ -14,8 +11,6 @@ from utilidades import (
     multiplicar_fracciones,
     simplificar_fraccion,
 )
-
-# Las operaciones sobre fracciones y utilidades están en utilidades.py
 
 def copiar_matriz(M):
     return u.copiar_matriz(M)
@@ -41,40 +36,51 @@ def fila_sumar_multiplo(M, i, j, c):
         k = k + 1
 
 def gauss_jordan(M):
+    """Aplica Gauss-Jordan para obtener forma escalonada reducida.
+    Devuelve resultado final, columnas pivote y procedimiento"""
     R = copiar_matriz(M)
     m = len(R)
     n = len(R[0]) - 1
-    pasos = []
+    pasos = []  # historial
+
+    def registrar(operacion):
+        pasos.append({"operacion": operacion, "matriz": copiar_matriz(R)})
     fila_pivote = 0
     col = 0
+    # Recorre columnas buscando pivotes y los normaliza
     while col < n and fila_pivote < m:
+        # Buscar fila con entrada no cero en la columna actual
         r = fila_pivote
         pivote_en = -1
         while r < m:
             if not es_cero(R[r][col]):
                 pivote_en = r
                 break
-            r = r + 1
+            r += 1
         if pivote_en == -1:
-            col = col + 1
+            col += 1
             continue
         if pivote_en != fila_pivote:
             fila_intercambiar(R, fila_pivote, pivote_en)
-            pasos.append("F" + str(fila_pivote+1) + " ↔ F" + str(pivote_en+1))
+            registrar("Intercambiar F" + str(fila_pivote+1) + " ↔ F" + str(pivote_en+1))
         piv = R[fila_pivote][col]
         if not es_uno(piv):
             inv = dividir_fracciones([1,1], piv)
             fila_escalar(R, fila_pivote, inv)
-            pasos.append("F" + str(fila_pivote+1) + " → (1/" + texto_fraccion(piv) + ")·F" + str(fila_pivote+1))
+            registrar("F" + str(fila_pivote+1) + " → (1/" + texto_fraccion(piv) + ")·F" + str(fila_pivote+1))
+        # Anular el resto de la columna
         r = 0
         while r < m:
             if r != fila_pivote and not es_cero(R[r][col]):
                 factor = R[r][col]
                 fila_sumar_multiplo(R, r, fila_pivote, negativo_fraccion(factor))
-                pasos.append("F" + str(r+1) + " → F" + str(r+1) + " − (" + texto_fraccion(factor) + ")·F" + str(fila_pivote+1))
-            r = r + 1
-        fila_pivote = fila_pivote + 1
-        col = col + 1
+                registrar("F" + str(r+1) + " → F" + str(r+1) + " − (" + texto_fraccion(factor) + ")·F" + str(fila_pivote+1))
+            r += 1
+        fila_pivote += 1
+        col += 1
+    # Estado final
+    registrar("Matriz en forma escalonada reducida por filas (final)")
+    # Identificar columnas pivote
     pivotes = []
     r = 0
     c = 0
@@ -86,14 +92,140 @@ def gauss_jordan(M):
                 if rr != r and not es_cero(R[rr][c]):
                     limpio = False
                     break
-                rr = rr + 1
+                rr += 1
             if limpio:
                 pivotes.append(c)
-                r = r + 1
-        c = c + 1
+                r += 1
+        c += 1
     return [R, pivotes, pasos]
 
+def eliminacion_gauss(M):
+    """Eliminación de Gauss (solo hacia abajo) para forma escalonada superior."""
+    R = copiar_matriz(M)
+    m = len(R)
+    n = len(R[0]) - 1
+    pasos = []
+
+    def registrar(op):
+        pasos.append({"operacion": op, "matriz": copiar_matriz(R)})
+
+    fila_pivote = 0
+    col = 0
+    while col < n and fila_pivote < m:
+        r = fila_pivote
+        pivote_en = -1
+        while r < m:
+            if not es_cero(R[r][col]):
+                pivote_en = r
+                break
+            r += 1
+        if pivote_en == -1:
+            col += 1
+            continue
+        if pivote_en != fila_pivote:
+            fila_intercambiar(R, fila_pivote, pivote_en)
+            registrar("Intercambiar F" + str(fila_pivote+1) + " ↔ F" + str(pivote_en+1))
+        piv = R[fila_pivote][col]
+        if not es_uno(piv):
+            inv = dividir_fracciones([1,1], piv)
+            fila_escalar(R, fila_pivote, inv)
+            registrar("F" + str(fila_pivote+1) + " → (1/" + texto_fraccion(piv) + ")·F" + str(fila_pivote+1))
+        r = fila_pivote + 1
+        while r < m:
+            if not es_cero(R[r][col]):
+                factor = R[r][col]
+                fila_sumar_multiplo(R, r, fila_pivote, negativo_fraccion(factor))
+                registrar("F" + str(r+1) + " → F" + str(r+1) + " − (" + texto_fraccion(factor) + ")·F" + str(fila_pivote+1))
+            r += 1
+        fila_pivote += 1
+        col += 1
+    registrar("Matriz en forma escalonada (final)")
+    # Detecta columnas pivote
+    pivotes = []
+    r = 0
+    c = 0
+    while c < n and r < m:
+        if not es_cero(R[r][c]):
+            # asegurar que es primer no cero
+            k = 0
+            es_primero = True
+            while k < c:
+                if not es_cero(R[r][k]):
+                    es_primero = False
+                    break
+                k += 1
+            if es_primero:
+                pivotes.append(c)
+                r += 1
+        c += 1
+    return [R, pivotes, pasos]
+
+def analizar_solucion_gauss(R, pivotes):
+    """Resuelve sistema a partir de forma escalonada"""
+    m = len(R)
+    n = len(R[0]) - 1
+    i = 0
+    while i < m:
+        todos_ceros = True
+        j = 0
+        while j < n:
+            if not es_cero(R[i][j]):
+                todos_ceros = False
+                break
+            j += 1
+        if todos_ceros and not es_cero(R[i][n]):
+            return {"solucion": "INCONSISTENTE", "tipo_forma": "ESCALONADA"}
+        i += 1
+    solucion_particular = []
+    j = 0
+    while j < n:
+        solucion_particular.append([0,1])
+        j += 1
+    libres = []
+    c = 0
+    while c < n:
+        es_libre = True
+        k = 0
+        while k < len(pivotes):
+            if pivotes[k] == c:
+                es_libre = False
+                break
+            k += 1
+        if es_libre:
+            libres.append(c)
+        c += 1
+    fila = m - 1
+    while fila >= 0:
+        # encontrar pivote
+        piv_col = -1
+        col = 0
+        while col < n:
+            if not es_cero(R[fila][col]):
+                piv_col = col
+                break
+            col += 1
+        if piv_col != -1:
+            suma = [0,1]
+            j = piv_col + 1
+            while j < n:
+                if not es_cero(R[fila][j]):
+                    suma = sumar_fracciones(suma, multiplicar_fracciones(R[fila][j], solucion_particular[j]))
+                j += 1
+            rhs = R[fila][n]
+            resto = restar_fracciones(rhs, suma)
+            piv = R[fila][piv_col]
+            if not es_uno(piv):
+                valor = dividir_fracciones(resto, piv)
+            else:
+                valor = resto
+            solucion_particular[piv_col] = valor
+        fila -= 1
+    if len(pivotes) == n:
+        return {"solucion": "UNICA", "solucion_particular": solucion_particular, "tipo_forma": "ESCALONADA"}
+    return {"solucion": "INFINITAS", "solucion_particular": solucion_particular, "libres": libres, "tipo_forma": "ESCALONADA"}
+
 def analizar_solucion(R, pivotes):
+    # Analiza solución con Gauss-Jordan
     m = len(R)
     n = len(R[0]) - 1
     i = 0
@@ -108,20 +240,21 @@ def analizar_solucion(R, pivotes):
         if todos_ceros and not es_cero(R[i][n]):
             return {"solucion": "INCONSISTENTE"}
         i = i + 1
-    x_p = []
+    # Creamos la solucion particular
+    solucion_particular = []
     j = 0
     while j < n:
-        x_p.append([0,1])
+        solucion_particular.append([0,1])
         j = j + 1
     r = 0
     k = 0
     while k < len(pivotes):
         columna_pivote = pivotes[k]
-        x_p[columna_pivote] = R[r][n]
+        solucion_particular[columna_pivote] = R[r][n]
         r = r + 1
         k = k + 1
     if len(pivotes) == n:
-        return {"solucion": "UNICA", "x_p": x_p}
+        return {"solucion": "UNICA", "solucion_particular": solucion_particular, "tipo_forma": "ESCALONADA_REDUCIDA"}
     libres = []
     c = 0
     while c < n:
@@ -135,5 +268,5 @@ def analizar_solucion(R, pivotes):
         if es_libre:
             libres.append(c)
         c = c + 1
-    # No se devuelven vectores dirección: se devuelve la solución particular y los índices de variables libres
-    return {"solucion": "INFINITAS", "x_p": x_p, "libres": libres}
+    # e devuelve la solución particular y los índices de variables libres
+    return {"solucion": "INFINITAS", "solucion_particular": solucion_particular, "libres": libres, "tipo_forma": "ESCALONADA_REDUCIDA"}

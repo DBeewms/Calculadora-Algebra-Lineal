@@ -119,7 +119,10 @@ class AlgebraLinealApp(tk.Tk):
         self.e_n.grid(row=1, column=3, sticky="w", pady=2)
 
         self.btn_generar = ttk.Button(form, text="Generar matriz", style="Primary.TButton", command=self.generar_matriz)
-        self.btn_generar.grid(row=0, column=3, sticky="e", padx=(18, 0))
+        self.btn_generar.grid(row=0, column=2, sticky="e", padx=(0, 6))
+
+        self.btn_limpiar = ttk.Button(form, text="Limpiar matriz", style="Primary.TButton", command=self.limpiar_matriz_valores)
+        self.btn_limpiar.grid(row=0, column=3, sticky="w", padx=(0, 0))
 
         self.mostrar_pasos_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(form, text="Mostrar pasos", variable=self.mostrar_pasos_var).grid(row=0, column=4, padx=(25, 0))
@@ -166,11 +169,18 @@ class AlgebraLinealApp(tk.Tk):
         self.generar_matriz()
 
     # Lógica GUI
+
     def limpiar_matriz(self):
         for fila in self.entries:
             for e in fila:
                 e.destroy()
         self.entries = []
+
+    def limpiar_matriz_valores(self):
+        for fila in self.entries:
+            for e in fila:
+                e.delete(0, "end")
+                e.insert(0, "0")
 
     def generar_matriz(self):
         try:
@@ -233,6 +243,7 @@ class AlgebraLinealApp(tk.Tk):
         self.text_resultado.delete("1.0", tk.END)
         tipo = info.get("tipo_forma", "")
         solucion = info.get("solucion", "")
+        pivotes = info.get("pivotes", [])
         self.text_resultado.insert(tk.END, f"Tipo de solución: {solucion}\n")
         if solucion == "INCONSISTENTE":
             self.text_resultado.insert(tk.END, "Sistema inconsistente.\n\n")
@@ -249,6 +260,8 @@ class AlgebraLinealApp(tk.Tk):
                 self.text_resultado.insert(tk.END, f"Variables libres: {vars_libres}\n\n")
         etiqueta = "Forma escalonada reducida por filas" if tipo == "ESCALONADA_REDUCIDA" else "Forma escalonada"
         self.text_resultado.insert(tk.END, etiqueta + " final ([A|b]):\n")
+        if tipo == "ESCALONADA_REDUCIDA":
+            self.text_resultado.insert(tk.END, "Columnas pivote: " + ", ".join(str(p+1) for p in pivotes) + "\n")
         self.text_resultado.insert(tk.END, matriz_a_texto(R) + "\n")
 
     def mostrar_pasos(self, pasos):

@@ -86,9 +86,12 @@ def mostrar_resultado(R, info):
     solucion = info["solucion"]
     tipo = info.get("tipo_forma", "ESCALONADA_REDUCIDA")
     etiqueta = "Matriz en forma escalonada reducida por filas ([A|b]):" if tipo == "ESCALONADA_REDUCIDA" else "Matriz en forma escalonada ([A|b]):"
+    pivotes = info.get("pivotes", [])
     if solucion == "INCONSISTENTE":
         print("Solución:", solucion)
         print(etiqueta)
+        if tipo == "ESCALONADA_REDUCIDA":
+            print("Columnas pivote:", ", ".join(str(p+1) for p in pivotes))
         imprimir_matriz_aumentada(R)
         return
     if solucion == "UNICA":
@@ -101,6 +104,8 @@ def mostrar_resultado(R, info):
             print("x" + str(i+1) + " = " + frac + " = " + dec)
             i = i + 1
         print(etiqueta)
+        if tipo == "ESCALONADA_REDUCIDA":
+            print("Columnas pivote:", ", ".join(str(p+1) for p in pivotes))
         imprimir_matriz_aumentada(R)
         return
     if solucion == "INFINITAS":
@@ -124,4 +129,6 @@ def mostrar_resultado(R, info):
                 contador_libres = contador_libres + 1
             print("Variables libres:", nombres_libres)
         print(etiqueta)
+        if tipo == "ESCALONADA_REDUCIDA":
+            print("Columnas pivote:", ", ".join(str(p+1) for p in pivotes))
         imprimir_matriz_aumentada(R)

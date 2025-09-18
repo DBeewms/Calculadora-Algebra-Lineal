@@ -238,9 +238,8 @@ def analizar_solucion(R, pivotes):
                 break
             j = j + 1
         if todos_ceros and not es_cero(R[i][n]):
-            return {"solucion": "INCONSISTENTE"}
+            return {"solucion": "INCONSISTENTE", "tipo_forma": "ESCALONADA_REDUCIDA", "pivotes": pivotes}
         i = i + 1
-    # Creamos la solucion particular
     solucion_particular = []
     j = 0
     while j < n:
@@ -254,7 +253,7 @@ def analizar_solucion(R, pivotes):
         r = r + 1
         k = k + 1
     if len(pivotes) == n:
-        return {"solucion": "UNICA", "solucion_particular": solucion_particular, "tipo_forma": "ESCALONADA_REDUCIDA"}
+        return {"solucion": "UNICA", "solucion_particular": solucion_particular, "tipo_forma": "ESCALONADA_REDUCIDA", "pivotes": pivotes}
     libres = []
     c = 0
     while c < n:
@@ -268,5 +267,4 @@ def analizar_solucion(R, pivotes):
         if es_libre:
             libres.append(c)
         c = c + 1
-    # e devuelve la solución particular y los índices de variables libres
-    return {"solucion": "INFINITAS", "solucion_particular": solucion_particular, "libres": libres, "tipo_forma": "ESCALONADA_REDUCIDA"}
+    return {"solucion": "INFINITAS", "solucion_particular": solucion_particular, "libres": libres, "tipo_forma": "ESCALONADA_REDUCIDA", "pivotes": pivotes}

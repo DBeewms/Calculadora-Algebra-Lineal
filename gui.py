@@ -261,7 +261,11 @@ class AlgebraLinealApp(tk.Tk):
         etiqueta = "Forma escalonada reducida por filas" if tipo == "ESCALONADA_REDUCIDA" else "Forma escalonada"
         self.text_resultado.insert(tk.END, etiqueta + " final ([A|b]):\n")
         if tipo == "ESCALONADA_REDUCIDA":
-            self.text_resultado.insert(tk.END, "Columnas pivote: " + ", ".join(str(p+1) for p in pivotes) + "\n")
+            if pivotes:
+                texto_pivotes = ", ".join(str(p+1) for p in pivotes)
+                self.text_resultado.insert(tk.END, f"Columnas pivote: {texto_pivotes}.\n")
+            else:
+                self.text_resultado.insert(tk.END, "Columnas pivote: ninguna.\n")
         self.text_resultado.insert(tk.END, matriz_a_texto(R) + "\n")
 
     def mostrar_pasos(self, pasos):

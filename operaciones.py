@@ -100,7 +100,7 @@ def gauss_jordan(M):
     return [R, pivotes, pasos]
 
 def eliminacion_gauss(M):
-    """Eliminación de Gauss (solo hacia abajo) para forma escalonada superior."""
+    # Eliminación de Gauss para forma escalonada superior
     R = copiar_matriz(M)
     m = len(R)
     n = len(R[0]) - 1
@@ -139,7 +139,7 @@ def eliminacion_gauss(M):
             r += 1
         fila_pivote += 1
         col += 1
-    registrar("Matriz en forma escalonada (final)")
+    registrar("Matriz en forma escalonada")
     # Detecta columnas pivote
     pivotes = []
     r = 0
@@ -161,7 +161,7 @@ def eliminacion_gauss(M):
     return [R, pivotes, pasos]
 
 def analizar_solucion_gauss(R, pivotes):
-    """Resuelve sistema a partir de forma escalonada"""
+    # Resuelve sistema a partir de forma escalonada y analiza con eliminación gaussiana
     m = len(R)
     n = len(R[0]) - 1
     i = 0

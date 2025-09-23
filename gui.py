@@ -101,22 +101,36 @@ class AlgebraLinealApp(tk.Tk):
         form.pack(fill="x", pady=(10, 10))
 
         # Método
-        ttk.Label(form, text="Método:").grid(row=0, column=0, sticky="w", padx=(0, 6), pady=2)
-        self.metodo_var = tk.StringVar(value="Gauss")
-        self.combo_metodo = ttk.Combobox(form, textvariable=self.metodo_var, state="readonly", width=28,
-                                         values=["Eliminación de Gauss (forma escalonada)", "Gauss-Jordan (forma escalonada reducida por filas)"])
+        ttk.Label(form, text="Operación:").grid(row=0, column=0, sticky="w", padx=(0, 6), pady=2)
+        self.metodo_var = tk.StringVar(value="Gauss-Jordan (forma escalonada reducida por filas)")
+        self.combo_metodo = ttk.Combobox(form, textvariable=self.metodo_var, state="readonly", width=42,
+                                         values=[
+                                             "Eliminación de Gauss (forma escalonada)",
+                                             "Gauss-Jordan (forma escalonada reducida por filas)",
+                                             "Suma de matrices (A + B)",
+                                             "Multiplicación de matrices (A · B)"
+                                         ])
         self.combo_metodo.grid(row=0, column=1, sticky="w", pady=2)
+        self.combo_metodo.bind("<<ComboboxSelected>>", lambda e: self._cambio_metodo())
 
         # Dimensiones
-        ttk.Label(form, text="Ecuaciones (m):").grid(row=1, column=0, sticky="w", padx=(0, 6), pady=2)
+        self.label_m = ttk.Label(form, text="Ecuaciones (m):")
+        self.label_m.grid(row=1, column=0, sticky="w", padx=(0, 6), pady=2)
         self.m_var = tk.StringVar(value="3")
         self.e_m = ttk.Entry(form, width=8, textvariable=self.m_var)
         self.e_m.grid(row=1, column=1, sticky="w", pady=2)
 
-        ttk.Label(form, text="Incógnitas (n):").grid(row=1, column=2, sticky="w", padx=(18, 6), pady=2)
+        self.label_n = ttk.Label(form, text="Incógnitas (n):")
+        self.label_n.grid(row=1, column=2, sticky="w", padx=(18, 6), pady=2)
         self.n_var = tk.StringVar(value="3")
         self.e_n = ttk.Entry(form, width=8, textvariable=self.n_var)
         self.e_n.grid(row=1, column=3, sticky="w", pady=2)
+
+        # Dimensión intermedia p (solo multiplicación)
+        self.label_p = ttk.Label(form, text="Columnas de A = Filas de B (p):")
+        self.p_var = tk.StringVar(value="3")
+        self.e_p = ttk.Entry(form, width=8, textvariable=self.p_var)
+        # Se posiciona y muestra solo cuando aplica
 
         self.btn_generar = ttk.Button(form, text="Generar matriz", style="Primary.TButton", command=self.generar_matriz)
         self.btn_generar.grid(row=0, column=2, sticky="e", padx=(0, 6))
@@ -129,11 +143,22 @@ class AlgebraLinealApp(tk.Tk):
 
         form.columnconfigure(5, weight=1)
 
-        # Contenedor matriz
-        matriz_frame_outer = ttk.LabelFrame(cont, text="Matriz aumentada [A|b]", padding=10)
-        matriz_frame_outer.pack(fill="x")
-        self.matriz_frame = ttk.Frame(matriz_frame_outer)
+        # Contenedores de matrices
+        self.contenedor_matriz_unica = ttk.LabelFrame(cont, text="Matriz aumentada [A|b]", padding=10)
+        self.contenedor_matriz_unica.pack(fill="x")
+        self.matriz_frame = ttk.Frame(self.contenedor_matriz_unica)
         self.matriz_frame.pack(fill="x")
+
+        self.contenedor_dos_matrices = ttk.Frame(cont)
+        # LabelFrames para A y B
+        self.frame_A_outer = ttk.LabelFrame(self.contenedor_dos_matrices, text="Matriz A", padding=10)
+        self.frame_B_outer = ttk.LabelFrame(self.contenedor_dos_matrices, text="Matriz B", padding=10)
+        self.frame_A_outer.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        self.frame_B_outer.pack(side="left", fill="x", expand=True, padx=(6, 0))
+        self.matrizA_frame = ttk.Frame(self.frame_A_outer)
+        self.matrizB_frame = ttk.Frame(self.frame_B_outer)
+        self.matrizA_frame.pack(fill="x")
+        self.matrizB_frame.pack(fill="x")
 
         # Botón resolver
         acciones = ttk.Frame(cont)
@@ -165,7 +190,9 @@ class AlgebraLinealApp(tk.Tk):
         self.tab_pasos.columnconfigure(0, weight=1)
 
         # Inicial
-        self.entries = []  # grid de entries
+        self.entries = []          # para [A|b]
+        self.entries_A = []        # para suma: A
+        self.entries_B = []        # para suma: B
         self.generar_matriz()
 
     # Lógica GUI
@@ -175,12 +202,55 @@ class AlgebraLinealApp(tk.Tk):
             for e in fila:
                 e.destroy()
         self.entries = []
+        for fila in self.entries_A:
+            for e in fila:
+                e.destroy()
+        self.entries_A = []
+        for fila in self.entries_B:
+            for e in fila:
+                e.destroy()
+        self.entries_B = []
 
     def limpiar_matriz_valores(self):
-        for fila in self.entries:
-            for e in fila:
-                e.delete(0, "end")
-                e.insert(0, "0")
+        if self.metodo_var.get().startswith("Suma"):
+            for fila in self.entries_A:
+                for e in fila:
+                    e.delete(0, "end"); e.insert(0, "0")
+            for fila in self.entries_B:
+                for e in fila:
+                    e.delete(0, "end"); e.insert(0, "0")
+        else:
+            for fila in self.entries:
+                for e in fila:
+                    e.delete(0, "end"); e.insert(0, "0")
+
+    def _cambio_metodo(self):
+        # Cambiar visibilidad de contenedores según operación
+        if self.metodo_var.get().startswith("Suma"):
+            # Mostrar dos matrices, ocultar aumentada
+            self.contenedor_matriz_unica.pack_forget()
+            self.contenedor_dos_matrices.pack(fill="x")
+            self.label_m.configure(text="Filas (m):")
+            self.label_n.configure(text="Columnas (n):")
+            # ocultar p si estuviera
+            self.label_p.grid_forget(); self.e_p.grid_forget()
+        else:
+            self.contenedor_dos_matrices.pack_forget()
+            self.contenedor_matriz_unica.pack(fill="x")
+            self.label_m.configure(text="Ecuaciones (m):")
+            self.label_n.configure(text="Incógnitas (n):")
+            # ocultar p si estuviera
+            self.label_p.grid_forget(); self.e_p.grid_forget()
+        # Multiplicación
+        if self.metodo_var.get().startswith("Multiplicación"):
+            self.contenedor_matriz_unica.pack_forget()
+            self.contenedor_dos_matrices.pack(fill="x")
+            self.label_m.configure(text="Filas de A (m):")
+            self.label_n.configure(text="Columnas de B (n):")
+            # mostrar p
+            self.label_p.grid(row=2, column=0, sticky="w", padx=(0, 6), pady=2)
+            self.e_p.grid(row=2, column=1, sticky="w", pady=2)
+        # No generar matriz aquí para evitar bucles; el usuario puede presionar "Generar matriz".
 
     def generar_matriz(self):
         try:
@@ -192,14 +262,63 @@ class AlgebraLinealApp(tk.Tk):
             messagebox.showerror("Error", "m y n deben ser enteros positivos.")
             return
         self.limpiar_matriz()
-        for i in range(m):
-            fila_entries = []
-            for j in range(n + 1):
-                e = ttk.Entry(self.matriz_frame, width=8, font=("Segoe UI", 10))
-                e.grid(row=i, column=j, padx=3, pady=3)
-                e.insert(0, "0")
-                fila_entries.append(e)
-            self.entries.append(fila_entries)
+        if self.metodo_var.get().startswith("Suma"):
+            # construir dos matrices m x n
+            for i in range(m):
+                fila_A = []
+                fila_B = []
+                for j in range(n):
+                    eA = ttk.Entry(self.matrizA_frame, width=8, font=("Segoe UI", 10))
+                    eA.grid(row=i, column=j, padx=3, pady=3)
+                    eA.insert(0, "0")
+                    fila_A.append(eA)
+                    eB = ttk.Entry(self.matrizB_frame, width=8, font=("Segoe UI", 10))
+                    eB.grid(row=i, column=j, padx=3, pady=3)
+                    eB.insert(0, "0")
+                    fila_B.append(eB)
+                self.entries_A.append(fila_A)
+                self.entries_B.append(fila_B)
+            # asegurar visibilidad adecuada (no forzar regeneración recursiva)
+            if not self.contenedor_dos_matrices.winfo_ismapped():
+                self.contenedor_matriz_unica.pack_forget()
+                self.contenedor_dos_matrices.pack(fill="x")
+        elif self.metodo_var.get().startswith("Multiplicación"):
+            # construir A (m×p) y B (p×n)
+            try:
+                p = int(self.p_var.get())
+                if p <= 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Error", "p debe ser un entero positivo.")
+                return
+            for i in range(m):
+                fila_A = []
+                for j in range(p):
+                    eA = ttk.Entry(self.matrizA_frame, width=8, font=("Segoe UI", 10))
+                    eA.grid(row=i, column=j, padx=3, pady=3)
+                    eA.insert(0, "0")
+                    fila_A.append(eA)
+                self.entries_A.append(fila_A)
+            for i in range(p):
+                fila_B = []
+                for j in range(n):
+                    eB = ttk.Entry(self.matrizB_frame, width=8, font=("Segoe UI", 10))
+                    eB.grid(row=i, column=j, padx=3, pady=3)
+                    eB.insert(0, "0")
+                    fila_B.append(eB)
+                self.entries_B.append(fila_B)
+            if not self.contenedor_dos_matrices.winfo_ismapped():
+                self.contenedor_matriz_unica.pack_forget()
+                self.contenedor_dos_matrices.pack(fill="x")
+        else:
+            for i in range(m):
+                fila_entries = []
+                for j in range(n + 1):
+                    e = ttk.Entry(self.matriz_frame, width=8, font=("Segoe UI", 10))
+                    e.grid(row=i, column=j, padx=3, pady=3)
+                    e.insert(0, "0")
+                    fila_entries.append(e)
+                self.entries.append(fila_entries)
 
     def _leer_matriz_desde_entries(self):
         M = []
@@ -217,13 +336,58 @@ class AlgebraLinealApp(tk.Tk):
             M.append(fila)
         return M
 
+    def _leer_matriz_simple(self, entries_matriz):
+        M = []
+        for fila_entries in entries_matriz:
+            fila = []
+            for e in fila_entries:
+                txt = e.get().strip() or "0"
+                try:
+                    fr = u.crear_fraccion_desde_cadena(txt)
+                except Exception:
+                    raise ValueError(f"Valor inválido: '{txt}'")
+                fila.append(fr)
+            M.append(fila)
+        return M
+
     def resolver(self):
         try:
-            M = self._leer_matriz_desde_entries()
+            if self.metodo_var.get().startswith("Suma"):
+                A = self._leer_matriz_simple(self.entries_A)
+                B = self._leer_matriz_simple(self.entries_B)
+            elif self.metodo_var.get().startswith("Multiplicación"):
+                A = self._leer_matriz_simple(self.entries_A)
+                B = self._leer_matriz_simple(self.entries_B)
+            else:
+                M = self._leer_matriz_desde_entries()
         except ValueError as ex:
             messagebox.showerror("Error de datos", str(ex))
             return
         metodo_texto = self.metodo_var.get()
+        if metodo_texto.startswith("Suma"):
+            try:
+                C = operaciones.sumar_matrices(A, B)
+            except ValueError as ex:
+                messagebox.showerror("Error", str(ex)); return
+            # Mostrar en resultados
+            self.text_resultado.delete("1.0", tk.END)
+            self.text_resultado.insert(tk.END, "Resultado de A + B:\n")
+            self.text_resultado.insert(tk.END, matriz_simple_a_texto(C) + "\n")
+            # Pasos no aplican
+            self.text_pasos.delete("1.0", tk.END)
+            self.text_pasos.insert(tk.END, "Esta operación no genera pasos intermedios.\n")
+            return
+        if metodo_texto.startswith("Multiplicación"):
+            try:
+                C = operaciones.multiplicar_matrices(A, B)
+            except ValueError as ex:
+                messagebox.showerror("Error", str(ex)); return
+            self.text_resultado.delete("1.0", tk.END)
+            self.text_resultado.insert(tk.END, "Resultado de A · B:\n")
+            self.text_resultado.insert(tk.END, matriz_simple_a_texto(C) + "\n")
+            self.text_pasos.delete("1.0", tk.END)
+            self.text_pasos.insert(tk.END, "Esta operación no genera pasos intermedios.\n")
+            return
         usar_gauss = metodo_texto.startswith("Eliminación")
         if usar_gauss:
             R, pivotes, pasos = operaciones.eliminacion_gauss(M)
@@ -280,6 +444,34 @@ class AlgebraLinealApp(tk.Tk):
                 self.text_pasos.insert(tk.END, "-" * 42 + "\n")
             else:
                 self.text_pasos.insert(tk.END, f"{idx:02d}) {paso}\n")
+
+def matriz_simple_a_texto(M):
+    if not M:
+        return "[ ]"
+    filas = len(M)
+    cols = len(M[0])
+    anchos = [0] * cols
+    i = 0
+    while i < filas:
+        j = 0
+        while j < cols:
+            txt = u.texto_fraccion(M[i][j])
+            if len(txt) > anchos[j]:
+                anchos[j] = len(txt)
+            j += 1
+        i += 1
+    lineas = []
+    i = 0
+    while i < filas:
+        partes = []
+        j = 0
+        while j < cols:
+            txt = u.texto_fraccion(M[i][j])
+            partes.append(txt.rjust(anchos[j]))
+            j += 1
+        lineas.append("[ " + "  ".join(partes) + " ]")
+        i += 1
+    return "\n".join(lineas)
 
 def run_gui():
     app = AlgebraLinealApp()

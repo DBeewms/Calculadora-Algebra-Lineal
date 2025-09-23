@@ -268,3 +268,73 @@ def analizar_solucion(R, pivotes):
             libres.append(c)
         c = c + 1
     return {"solucion": "INFINITAS", "solucion_particular": solucion_particular, "libres": libres, "tipo_forma": "ESCALONADA_REDUCIDA", "pivotes": pivotes}
+
+# ----------------------- Operaciones con matrices -----------------------
+
+def _validar_dimensiones_iguales(A, B):
+    if A is None or B is None or len(A) == 0 or len(B) == 0:
+        raise ValueError("Las matrices no pueden ser vacías.")
+    mA = len(A)
+    nA = len(A[0])
+    mB = len(B)
+    nB = len(B[0])
+    if mA != mB or nA != nB:
+        raise ValueError("Para sumar, ambas matrices deben tener las mismas dimensiones.")
+
+def sumar_matrices(A, B):
+    """Suma dos matrices A y B (sin columna aumentada), elemento a elemento.
+    Devuelve la matriz resultado C. Usa aritmética de fracciones del módulo utilidades.
+    """
+    _validar_dimensiones_iguales(A, B)
+    m = len(A)
+    n = len(A[0])
+    C = []
+    i = 0
+    while i < m:
+        fila = []
+        j = 0
+        while j < n:
+            fila.append(sumar_fracciones(A[i][j], B[i][j]))
+            j += 1
+        C.append(fila)
+        i += 1
+    return C
+
+def _validar_dimensiones_multiplicacion(A, B):
+    if A is None or B is None or len(A) == 0 or len(B) == 0:
+        raise ValueError("Las matrices no pueden ser vacías.")
+    m = len(A)
+    pA = len(A[0])
+    pB = len(B)
+    if pA != pB:
+        raise ValueError("Para multiplicar, el número de columnas de A debe ser igual al número de filas de B.")
+
+def multiplicar_matrices(A, B):
+    """Multiplica dos matrices A (m×p) y B (p×n), devolviendo C (m×n)."""
+    _validar_dimensiones_multiplicacion(A, B)
+    m = len(A)
+    p = len(A[0])
+    n = len(B[0])
+    # Validar que B tenga n columnas en todas sus filas
+    i = 0
+    while i < len(B):
+        if len(B[i]) != n:
+            raise ValueError("La matriz B tiene filas con distinta cantidad de columnas.")
+        i += 1
+    C = []
+    i = 0
+    while i < m:
+        filaC = []
+        j = 0
+        while j < n:
+            suma = [0, 1]
+            k = 0
+            while k < p:
+                prod = multiplicar_fracciones(A[i][k], B[k][j])
+                suma = sumar_fracciones(suma, prod)
+                k += 1
+            filaC.append(suma)
+            j += 1
+        C.append(filaC)
+        i += 1
+    return C

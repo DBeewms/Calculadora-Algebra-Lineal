@@ -21,6 +21,60 @@ def leer_matriz_aumentada():
         i = i + 1
     return matriz
 
+def leer_matriz_simple(nombre="A"):
+    print(f"\nIngrese dimensiones de la matriz {nombre}:")
+    m = int(input("Filas (m) = ").strip())
+    n = int(input("Columnas (n) = ").strip())
+    print(f"\nIntroduzca la matriz {nombre} fila por fila (valores separados por espacios):")
+    matriz = []
+    i = 0
+    while i < m:
+        linea = input(f"Fila {i+1} de {nombre}: ").strip().split()
+        if len(linea) != n:
+            print("Cantidad incorrecta de valores. Deben ser", n)
+            continue
+        fila = []
+        j = 0
+        while j < len(linea):
+            fr = u.crear_fraccion_desde_cadena(linea[j])
+            fila.append(fr)
+            j = j + 1
+        matriz.append(fila)
+        i = i + 1
+    return matriz
+
+def imprimir_matriz(M):
+    if len(M) == 0:
+        print("[]")
+        return
+    filas = len(M)
+    columnas = len(M[0])
+    anchos = []
+    j = 0
+    while j < columnas:
+        maximo = 0
+        i = 0
+        while i < filas:
+            texto = u.texto_fraccion(M[i][j])
+            largo = len(texto)
+            if largo > maximo:
+                maximo = largo
+            i = i + 1
+        anchos.append(maximo)
+        j = j + 1
+    i = 0
+    while i < filas:
+        partes = []
+        j = 0
+        while j < columnas:
+            txt = u.texto_fraccion(M[i][j])
+            espacios = anchos[j] - len(txt)
+            pad = " " * espacios
+            partes.append(pad + txt)
+            j = j + 1
+        print("[ " + "  ".join(partes) + " ]")
+        i = i + 1
+
 def imprimir_matriz_aumentada(M):
     if len(M) == 0:
         print("[]")

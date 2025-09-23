@@ -5,10 +5,36 @@ import gui
 
 
 def ejecutar():
-    print("Seleccione método:")
+    print("Seleccione operación:")
     print("  1) Eliminación de Gauss (forma escalonada)")
     print("  2) Gauss-Jordan (forma escalonada reducida por filas)")
-    opcion = input("Opción (1/2): ").strip()
+    print("  3) Suma de matrices (A + B)")
+    print("  4) Multiplicación de matrices (A · B)")
+    opcion = input("Opción (1/2/3/4): ").strip()
+    if opcion == "3":
+        A = menu.leer_matriz_simple(nombre="A")
+        B = menu.leer_matriz_simple(nombre="B")
+        try:
+            C = operaciones.sumar_matrices(A, B)
+        except ValueError as ex:
+            print("Error:", str(ex))
+            return
+        print("\nResultado de A + B:")
+        menu.imprimir_matriz(C)
+        return
+    if opcion == "4":
+        print("\nNota: Para multiplicar A (m×p) por B (p×n), las columnas de A deben coincidir con las filas de B.")
+        A = menu.leer_matriz_simple(nombre="A")
+        B = menu.leer_matriz_simple(nombre="B")
+        try:
+            C = operaciones.multiplicar_matrices(A, B)
+        except ValueError as ex:
+            print("Error:", str(ex))
+            return
+        print("\nResultado de A · B:")
+        menu.imprimir_matriz(C)
+        return
+    # Caso sistemas lineales
     M = menu.leer_matriz_aumentada()
     if opcion == "1":
         R, pivotes, pasos = operaciones.eliminacion_gauss(M)

@@ -29,25 +29,30 @@ def crear_estilo():
     style.configure("Secondary.TLabel", foreground=COLOR_TEXTO_SEC, background=COLOR_PANEL, font=("Segoe UI", 9))
     style.configure("Title.TLabel", font=("Segoe UI", 12, "bold"), foreground=COLOR_PRIMARIO_BASE, background=COLOR_PANEL)
 
+    # Estilos tipo "card" (fondos blancos) para contenedores
+    style.configure("Card.TFrame", background=COLOR_FONDO)
+    style.configure("Card.TLabelframe", background=COLOR_FONDO, borderwidth=1, relief="solid")
+    style.configure("Card.TLabelframe.Label", background=COLOR_FONDO, foreground=COLOR_TEXTO_SEC)
+
     style.configure("Primary.TButton",
                     background=COLOR_PRIMARIO_BASE,
                     foreground="#FFFFFF",
                     font=fuente_base,
-                    padding=6,
+                    padding=(12, 8),
                     borderwidth=0)
     style.map("Primary.TButton",
               background=[("active", COLOR_PRIMARIO_HOVER), ("pressed", COLOR_PRIMARIO_PRESSED)],
               relief=[("pressed", "sunken"), ("!pressed", "flat")])
 
-    style.configure("TButton", padding=5, font=fuente_base)
+    style.configure("TButton", padding=(10, 7), font=fuente_base)
 
     # Entry / Combobox
-    style.configure("TEntry", fieldbackground=COLOR_FONDO, background=COLOR_FONDO, foreground=COLOR_TEXTO, bordercolor=COLOR_BORDES, lightcolor=COLOR_ACTIVO)
+    style.configure("TEntry", fieldbackground=COLOR_FONDO, background=COLOR_FONDO, foreground=COLOR_TEXTO)
     style.configure("TCombobox", fieldbackground=COLOR_FONDO, background=COLOR_FONDO, foreground=COLOR_TEXTO)
 
     # Notebook
     style.configure("TNotebook", background=COLOR_PANEL, borderwidth=0)
-    style.configure("TNotebook.Tab", padding=(12, 6), font=fuente_base)
+    style.configure("TNotebook.Tab", padding=(16, 8), font=fuente_base)
     style.map("TNotebook.Tab", background=[("selected", COLOR_FONDO)], foreground=[("selected", COLOR_PRIMARIO_BASE)])
 
     return style
@@ -97,8 +102,11 @@ class AlgebraLinealApp(tk.Tk):
         header.pack(fill="x")
         ttk.Label(header, text="Resolución de Sistemas Lineales", style="Title.TLabel").pack(side="left")
 
-        form = ttk.Frame(cont)
-        form.pack(fill="x", pady=(10, 10))
+        # Barra de controles (en un contenedor card para resaltar)
+        barra = ttk.Frame(cont, style="Card.TFrame", padding=10)
+        barra.pack(fill="x", pady=(10, 12))
+        form = ttk.Frame(barra, style="Card.TFrame")
+        form.pack(fill="x")
 
         # Método
         ttk.Label(form, text="Operación:").grid(row=0, column=0, sticky="w", padx=(0, 6), pady=2)
@@ -133,26 +141,38 @@ class AlgebraLinealApp(tk.Tk):
         # Se posiciona y muestra solo cuando aplica
 
         self.btn_generar = ttk.Button(form, text="Generar matriz", style="Primary.TButton", command=self.generar_matriz)
-        self.btn_generar.grid(row=0, column=2, sticky="e", padx=(0, 6))
+        self.btn_generar.grid(row=0, column=2, sticky="w", padx=(0, 6))
 
-        self.btn_limpiar = ttk.Button(form, text="Limpiar matriz", style="Primary.TButton", command=self.limpiar_matriz_valores)
+        self.btn_limpiar = ttk.Button(form, text="Limpiar", style="Primary.TButton", command=self.limpiar_matriz_valores)
         self.btn_limpiar.grid(row=0, column=3, sticky="w", padx=(0, 0))
 
         self.mostrar_pasos_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(form, text="Mostrar pasos", variable=self.mostrar_pasos_var).grid(row=0, column=4, padx=(25, 0))
 
+        # Botón resolver integrado a la derecha
+        self.btn_resolver = ttk.Button(form, text="Resolver", style="Primary.TButton", command=self.resolver)
+        self.btn_resolver.grid(row=0, column=5, sticky="e")
+
+        # Empujar 'Resolver' a la derecha
+        form.columnconfigure(4, weight=0)
         form.columnconfigure(5, weight=1)
 
-        # Contenedores de matrices
-        self.contenedor_matriz_unica = ttk.LabelFrame(cont, text="Matriz aumentada [A|b]", padding=10)
-        self.contenedor_matriz_unica.pack(fill="x")
+        # Separador visual entre controles y matrices
+        ttk.Separator(cont, orient="horizontal").pack(fill="x", pady=(4, 10))
+
+        # Hint de ayuda
+        ttk.Label(cont, text="Formato: enteros, fracciones a/b o decimales.", style="Secondary.TLabel").pack(anchor="w", padx=2)
+
+        # Contenedores de matrices (encima de las pestañas)
+        self.contenedor_matriz_unica = ttk.LabelFrame(cont, text="Matriz aumentada [A|b]", padding=12, style="Card.TLabelframe")
+        self.contenedor_matriz_unica.pack(fill="x", pady=(8, 6))
         self.matriz_frame = ttk.Frame(self.contenedor_matriz_unica)
         self.matriz_frame.pack(fill="x")
 
-        self.contenedor_dos_matrices = ttk.Frame(cont)
+        self.contenedor_dos_matrices = ttk.Frame(cont, style="Card.TFrame")
         # LabelFrames para A y B
-        self.frame_A_outer = ttk.LabelFrame(self.contenedor_dos_matrices, text="Matriz A", padding=10)
-        self.frame_B_outer = ttk.LabelFrame(self.contenedor_dos_matrices, text="Matriz B", padding=10)
+        self.frame_A_outer = ttk.LabelFrame(self.contenedor_dos_matrices, text="Matriz A", padding=12, style="Card.TLabelframe")
+        self.frame_B_outer = ttk.LabelFrame(self.contenedor_dos_matrices, text="Matriz B", padding=12, style="Card.TLabelframe")
         self.frame_A_outer.pack(side="left", fill="x", expand=True, padx=(0, 6))
         self.frame_B_outer.pack(side="left", fill="x", expand=True, padx=(6, 0))
         self.matrizA_frame = ttk.Frame(self.frame_A_outer)
@@ -160,26 +180,29 @@ class AlgebraLinealApp(tk.Tk):
         self.matrizA_frame.pack(fill="x")
         self.matrizB_frame.pack(fill="x")
 
-        # Botón resolver
-        acciones = ttk.Frame(cont)
-        acciones.pack(fill="x", pady=(10, 4))
-        self.btn_resolver = ttk.Button(acciones, text="Resolver", style="Primary.TButton", command=self.resolver)
-        self.btn_resolver.pack(side="left")
+        # Separador entre matrices y resultados
+        ttk.Separator(cont, orient="horizontal").pack(fill="x", pady=(10, 8))
 
-        # Notebook resultados
-        notebook = ttk.Notebook(cont)
-        notebook.pack(fill="both", expand=True, pady=(8,0))
+        # Notebook resultados (debajo de las matrices), en contenedor "card"
+        nb_frame = ttk.Frame(cont, style="Card.TFrame", padding=6)
+        nb_frame.pack(fill="both", expand=True, pady=(0,0))
+        notebook = ttk.Notebook(nb_frame)
+        notebook.pack(fill="both", expand=True)
         self.tab_resultado = ttk.Frame(notebook)
         self.tab_pasos = ttk.Frame(notebook)
         notebook.add(self.tab_resultado, text="Resultado")
         notebook.add(self.tab_pasos, text="Pasos")
 
         # Resultado
-        self.text_resultado = tk.Text(self.tab_resultado, wrap="word", height=18, font=("Consolas", 10), background=COLOR_FONDO, borderwidth=1, relief="solid")
+        self.text_resultado = tk.Text(self.tab_resultado, wrap="word", height=18, font=("Consolas", 10), background=COLOR_FONDO, borderwidth=0, relief="flat")
         self.text_resultado.pack(fill="both", expand=True, padx=6, pady=6)
+        try:
+            self.text_resultado.configure(highlightthickness=1, highlightbackground=COLOR_BORDES)
+        except Exception:
+            pass
 
         # Pasos
-        self.text_pasos = tk.Text(self.tab_pasos, wrap="none", font=("Consolas", 10), background=COLOR_FONDO, borderwidth=1, relief="solid")
+        self.text_pasos = tk.Text(self.tab_pasos, wrap="none", font=("Consolas", 10), background=COLOR_FONDO, borderwidth=0, relief="flat")
         sx = ttk.Scrollbar(self.tab_pasos, orient="horizontal", command=self.text_pasos.xview)
         sy = ttk.Scrollbar(self.tab_pasos, orient="vertical", command=self.text_pasos.yview)
         self.text_pasos.configure(xscrollcommand=sx.set, yscrollcommand=sy.set)
@@ -188,6 +211,10 @@ class AlgebraLinealApp(tk.Tk):
         sx.grid(row=1, column=0, sticky="ew", padx=(6,0))
         self.tab_pasos.rowconfigure(0, weight=1)
         self.tab_pasos.columnconfigure(0, weight=1)
+        try:
+            self.text_pasos.configure(highlightthickness=1, highlightbackground=COLOR_BORDES)
+        except Exception:
+            pass
 
         # Inicial
         self.entries = []          # para [A|b]
@@ -269,11 +296,11 @@ class AlgebraLinealApp(tk.Tk):
                 fila_B = []
                 for j in range(n):
                     eA = ttk.Entry(self.matrizA_frame, width=8, font=("Segoe UI", 10))
-                    eA.grid(row=i, column=j, padx=3, pady=3)
+                    eA.grid(row=i, column=j, padx=6, pady=6)
                     eA.insert(0, "0")
                     fila_A.append(eA)
                     eB = ttk.Entry(self.matrizB_frame, width=8, font=("Segoe UI", 10))
-                    eB.grid(row=i, column=j, padx=3, pady=3)
+                    eB.grid(row=i, column=j, padx=6, pady=6)
                     eB.insert(0, "0")
                     fila_B.append(eB)
                 self.entries_A.append(fila_A)
@@ -295,7 +322,7 @@ class AlgebraLinealApp(tk.Tk):
                 fila_A = []
                 for j in range(p):
                     eA = ttk.Entry(self.matrizA_frame, width=8, font=("Segoe UI", 10))
-                    eA.grid(row=i, column=j, padx=3, pady=3)
+                    eA.grid(row=i, column=j, padx=6, pady=6)
                     eA.insert(0, "0")
                     fila_A.append(eA)
                 self.entries_A.append(fila_A)
@@ -303,7 +330,7 @@ class AlgebraLinealApp(tk.Tk):
                 fila_B = []
                 for j in range(n):
                     eB = ttk.Entry(self.matrizB_frame, width=8, font=("Segoe UI", 10))
-                    eB.grid(row=i, column=j, padx=3, pady=3)
+                    eB.grid(row=i, column=j, padx=6, pady=6)
                     eB.insert(0, "0")
                     fila_B.append(eB)
                 self.entries_B.append(fila_B)
@@ -315,7 +342,7 @@ class AlgebraLinealApp(tk.Tk):
                 fila_entries = []
                 for j in range(n + 1):
                     e = ttk.Entry(self.matriz_frame, width=8, font=("Segoe UI", 10))
-                    e.grid(row=i, column=j, padx=3, pady=3)
+                    e.grid(row=i, column=j, padx=6, pady=6)
                     e.insert(0, "0")
                     fila_entries.append(e)
                 self.entries.append(fila_entries)
@@ -412,16 +439,50 @@ class AlgebraLinealApp(tk.Tk):
         if solucion == "INCONSISTENTE":
             self.text_resultado.insert(tk.END, "Sistema inconsistente.\n\n")
         else:
-            sp = info.get("solucion_particular", [])
-            if sp:
-                self.text_resultado.insert(tk.END, "Variables (fracción = decimal):\n")
-                for i, fr in enumerate(sp, start=1):
-                    self.text_resultado.insert(tk.END, f"x{i} = {u.texto_fraccion(fr)} = {u.texto_decimal(fr)}\n")
+            if tipo == "ESCALONADA_REDUCIDA" and solucion != "UNICA":
+                # Mostrar variables en función de las libres (Gauss-Jordan)
+                m = len(R)
+                n = len(R[0]) - 1
+                es_pivote = [False] * n
+                for c in pivotes:
+                    if 0 <= c < n:
+                        es_pivote[c] = True
+                libres = [j for j in range(n) if not es_pivote[j]]
+                if libres:
+                    vars_libres = ", ".join(f"x{j+1}" for j in libres)
+                    self.text_resultado.insert(tk.END, f"Variables libres: {vars_libres}\n")
+                if pivotes:
+                    self.text_resultado.insert(tk.END, "Variables dependientes en función de las libres:\n")
+                r = 0
+                while r < m and r < len(pivotes):
+                    c = pivotes[r]
+                    b = R[r][n]
+                    partes = [u.texto_fraccion(b)]
+                    j = 0
+                    while j < n:
+                        if not es_pivote[j]:
+                            coef = R[r][j]
+                            if not u.es_cero(coef):
+                                neg = u.negativo_fraccion(coef)
+                                signo = "-" if neg[0] < 0 else "+"
+                                abs_val = [-neg[0], neg[1]] if neg[0] < 0 else [neg[0], neg[1]]
+                                coef_txt = u.texto_fraccion(abs_val)
+                                partes.append(f" {signo} {coef_txt}·x{j+1}")
+                        j += 1
+                    self.text_resultado.insert(tk.END, f"x{c+1} = " + "".join(partes) + "\n")
+                    r += 1
                 self.text_resultado.insert(tk.END, "\n")
-            libres = info.get("libres", [])
-            if libres:
-                vars_libres = ", ".join(f"x{c+1}" for c in libres)
-                self.text_resultado.insert(tk.END, f"Variables libres: {vars_libres}\n\n")
+            else:
+                sp = info.get("solucion_particular", [])
+                if sp:
+                    self.text_resultado.insert(tk.END, "Variables (fracción = decimal):\n")
+                    for i, fr in enumerate(sp, start=1):
+                        self.text_resultado.insert(tk.END, f"x{i} = {u.texto_fraccion(fr)} = {u.texto_decimal(fr)}\n")
+                    self.text_resultado.insert(tk.END, "\n")
+                libres = info.get("libres", [])
+                if libres:
+                    vars_libres = ", ".join(f"x{c+1}" for c in libres)
+                    self.text_resultado.insert(tk.END, f"Variables libres: {vars_libres}\n\n")
         etiqueta = "Forma escalonada reducida por filas" if tipo == "ESCALONADA_REDUCIDA" else "Forma escalonada"
         self.text_resultado.insert(tk.END, etiqueta + " final ([A|b]):\n")
         if tipo == "ESCALONADA_REDUCIDA":

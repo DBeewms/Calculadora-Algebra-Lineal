@@ -164,24 +164,45 @@ def mostrar_resultado(R, info):
         return
     if solucion == "INFINITAS":
         print("Solución:", solucion)
-        print("Solución particular (valores conocidos, 0 para libres):")
-        valores = info.get("solucion_particular", [])
-        i = 0
-        while i < len(valores):
-            frac = u.texto_fraccion(valores[i])
-            dec = u.texto_decimal(valores[i])
-            print("x" + str(i+1) + " = " + frac + " = " + dec)
-            i = i + 1
-        if "libres" in info and len(info["libres"]) > 0:
-            nombres_libres = ""
-            contador_libres = 0
-            while contador_libres < len(info["libres"]):
-                idx = info["libres"][contador_libres]
-                nombres_libres = nombres_libres + "x" + str(idx+1)
-                if contador_libres < len(info["libres"]) - 1:
-                    nombres_libres = nombres_libres + ", "
-                contador_libres = contador_libres + 1
-            print("Variables libres:", nombres_libres)
+        # Si es Gauss-Jordan, expresar cada variable en función de las libres
+        if tipo == "ESCALONADA_REDUCIDA":
+            m = len(R)
+            n = len(R[0]) - 1
+            # Determinar columnas libres
+            es_pivote = [False] * n
+            for c in pivotes:
+                if 0 <= c < n:
+                    es_pivote[c] = True
+            libres = [j for j in range(n) if not es_pivote[j]]
+            # Mostrar variables libres
+            if libres:
+                print("Variables libres:", ", ".join(f"x{j+1}" for j in libres))
+            # Expresar variables pivote
+            if pivotes:
+                print("Variables dependientes en función de las libres:")
+            r = 0
+            while r < m and r < len(pivotes):
+                c = pivotes[r]
+                # x_c = b - sum(coef_j * x_j libres)
+                b = R[r][n]
+                # Construir expresión
+                partes = [u.texto_fraccion(b)]
+                j = 0
+                while j < n:
+                    if not es_pivote[j]:
+                        coef = R[r][j]
+                        if not u.es_cero(coef):
+                            # term = -coef * t_k
+                            neg = u.negativo_fraccion(coef)
+                            # signo y valor absoluto
+                            signo = "-" if neg[0] < 0 else "+"
+                            abs_val = [-neg[0], neg[1]] if neg[0] < 0 else [neg[0], neg[1]]
+                            coef_txt = u.texto_fraccion(abs_val)
+                            partes.append(f" {signo} {coef_txt}·x{j+1}")
+                    j += 1
+                print(f"x{c+1} = " + "".join(partes))
+                r += 1
+            # Si no hay pivotes, todas son libres: ya se imprimieron
         print(etiqueta)
         if tipo == "ESCALONADA_REDUCIDA":
             print("Columnas pivote:", ", ".join(str(p+1) for p in pivotes))

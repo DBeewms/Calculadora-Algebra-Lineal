@@ -27,12 +27,16 @@ def ejecutar():
         A = menu.leer_matriz_simple(nombre="A")
         B = menu.leer_matriz_simple(nombre="B")
         try:
-            C = operaciones.multiplicar_matrices(A, B)
+            C, pasos = operaciones.multiplicar_matrices(A, B)
         except ValueError as ex:
             print("Error:", str(ex))
             return
         print("\nResultado de A · B:")
         menu.imprimir_matriz(C)
+        # Mostrar pasos como combinación lineal
+        ver = input("Mostrar pasos del procedimiento? (s/n): ").strip().lower()
+        if ver == "s":
+            menu.mostrar_pasos(pasos)
         return
     # Caso sistemas lineales
     M = menu.leer_matriz_aumentada()

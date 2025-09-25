@@ -310,7 +310,12 @@ def _validar_dimensiones_multiplicacion(A, B):
         raise ValueError("Para multiplicar, el número de columnas de A debe ser igual al número de filas de B.")
 
 def multiplicar_matrices(A, B):
-    """Multiplica dos matrices A (m×p) y B (p×n), devolviendo C (m×n)."""
+    """Multiplica dos matrices A (m×p) y B (p×n), devolviendo C (m×n).
+    Además registra el procedimiento en pasos describiendo la multiplicación
+    como combinaciones lineales de columnas de A (por cada columna de B).
+    Devuelve una tupla (C, pasos) donde pasos es una lista de dicts
+    con las claves: 'operacion', 'matriz' y 'tipo' ('simple').
+    """
     _validar_dimensiones_multiplicacion(A, B)
     m = len(A)
     p = len(A[0])
@@ -321,20 +326,48 @@ def multiplicar_matrices(A, B):
         if len(B[i]) != n:
             raise ValueError("La matriz B tiene filas con distinta cantidad de columnas.")
         i += 1
+    # Inicializar C con ceros (fracción [0,1])
     C = []
     i = 0
     while i < m:
         filaC = []
         j = 0
         while j < n:
-            suma = [0, 1]
-            k = 0
-            while k < p:
-                prod = multiplicar_fracciones(A[i][k], B[k][j])
-                suma = sumar_fracciones(suma, prod)
-                k += 1
-            filaC.append(suma)
+            filaC.append([0, 1])
             j += 1
         C.append(filaC)
         i += 1
-    return C
+
+    pasos = []
+    # Paso inicial
+    pasos.append({"operacion": "Inicializar C (m×n) con ceros", "matriz": copiar_matriz(C), "tipo": "simple"})
+
+    # Hacemos la multiplicación por columnas: cada columna j de C es combinación
+    # lineal de las columnas de A con coeficientes en la columna j de B.
+    j = 0
+    while j < n:
+        pasos.append({"operacion": f"Calcular columna {j+1} de C como combinación lineal de columnas de A (usando la columna {j+1} de B)", "matriz": copiar_matriz(C), "tipo": "simple"})
+        k = 0
+        while k < p:
+            coef = B[k][j]
+            # Añadir coef * columna k de A a la columna j de C
+            i = 0
+            while i < m:
+                termino = multiplicar_fracciones(coef, A[i][k])
+                C[i][j] = sumar_fracciones(C[i][j], termino)
+                i += 1
+            pasos.append({"operacion": f"Agregar ({texto_fraccion(coef)})·columna A{ k+1 } a columna {j+1} de C", "matriz": copiar_matriz(C), "tipo": "simple"})
+            k += 1
+        # Resumen de la columna j
+        partes = []
+        k = 0
+        while k < p:
+            coef = B[k][j]
+            if not u.es_cero(coef):
+                partes.append(texto_fraccion(coef) + "·A[:," + str(k+1) + "]")
+            k += 1
+        suma_text = " + ".join(partes) if partes else "0"
+        pasos.append({"operacion": f"Columna {j+1} terminada: C[:,{j+1}] = {suma_text}", "matriz": copiar_matriz(C), "tipo": "simple"})
+        j += 1
+
+    return C, pasos

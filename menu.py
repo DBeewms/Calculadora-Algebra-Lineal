@@ -129,7 +129,12 @@ def mostrar_pasos(pasos):
         paso = pasos[i]
         if isinstance(paso, dict):
             print(f"{i+1:02d}) {paso.get('operacion','')}")
-            imprimir_matriz_aumentada(paso.get("matriz", []))
+            tipo = paso.get('tipo', 'aumentada')
+            mat = paso.get('matriz', [])
+            if tipo == 'simple':
+                imprimir_matriz(mat)
+            else:
+                imprimir_matriz_aumentada(mat)
             if i < len(pasos) - 1:
                 print("-" * 40)
         else:

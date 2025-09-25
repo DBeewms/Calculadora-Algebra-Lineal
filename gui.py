@@ -406,14 +406,24 @@ class AlgebraLinealApp(tk.Tk):
             return
         if metodo_texto.startswith("Multiplicación"):
             try:
-                C = operaciones.multiplicar_matrices(A, B)
+                C, pasos = operaciones.multiplicar_matrices(A, B)
             except ValueError as ex:
                 messagebox.showerror("Error", str(ex)); return
             self.text_resultado.delete("1.0", tk.END)
             self.text_resultado.insert(tk.END, "Resultado de A · B:\n")
             self.text_resultado.insert(tk.END, matriz_simple_a_texto(C) + "\n")
+            # Mostrar pasos generados por la multiplicación
             self.text_pasos.delete("1.0", tk.END)
-            self.text_pasos.insert(tk.END, "Esta operación no genera pasos intermedios.\n")
+            if not pasos:
+                self.text_pasos.insert(tk.END, "(No hay pasos intermedios).\n")
+            else:
+                for idx, paso in enumerate(pasos, start=1):
+                    op = paso.get('operacion', '')
+                    self.text_pasos.insert(tk.END, f"{idx:02d}) {op}\n")
+                    mat = paso.get('matriz', [])
+                    # Matriz simple
+                    self.text_pasos.insert(tk.END, matriz_simple_a_texto(mat) + "\n")
+                    self.text_pasos.insert(tk.END, "-" * 42 + "\n")
             return
         usar_gauss = metodo_texto.startswith("Eliminación")
         if usar_gauss:
